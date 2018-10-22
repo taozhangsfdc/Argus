@@ -207,6 +207,7 @@ public interface MonitorService extends Service {
         ALERTS_EVALUATION_LATENCY("argus.core", "alerts.evaluation.latency"),
         ALERTS_SKIPPED("argus.core", "alerts.skipped"),
         NOTIFICATIONS_SENT("argus.core", "notifications.sent"),
+        NOTICIATION_PREPARE_TO_BE_SENT("argus.core", "notification.prepared.to.be.sent"),
         TRIGGERS_VIOLATED("argus.core", "triggers.violated"),
         ALERTS_MAX("argus.core", "alerts.max"),
         ALERT_EVALUATION_KPI("argus.core", "alert.evaluation.kpi"),
