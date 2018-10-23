@@ -32,14 +32,11 @@
 package com.salesforce.dva.argus.service;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
-import com.salesforce.dva.argus.service.metric.MetricReader;
-import com.salesforce.dva.argus.util.AlertUtils;
 import org.junit.Test;
 
 import com.salesforce.dva.argus.AbstractTest;
@@ -48,6 +45,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.argus.exception.SendNotificationException;
 import com.salesforce.dva.argus.service.AlertService.Notifier;
 import com.salesforce.dva.argus.service.AlertService.SupportedNotifier;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
@@ -74,8 +72,13 @@ public class NotifierTest extends AbstractTest {
 
         for (int i = 0; i < count; i++) {
             Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.DATABASE);
-
-            notifier.sendNotification(context);
+            
+        	try {
+				notifier.sendNotification(context);
+			} catch (SendNotificationException e) {
+				fail(String.format("Test generated exception {}",e.getMessage()));
+			}
+            
         }
 
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.DATABASE);
