@@ -76,6 +76,7 @@ import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.argus.exception.SendNotificationException;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.HistoryService;
@@ -743,21 +744,36 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric);
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
-		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
-		notifier.sendNotification(context);
 
+		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
+		
 		Map<String, String> tags = new HashMap<>();
 		tags.put("status", "active");
 		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
-		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
-		tags = new HashMap<>();
-		tags.put("notification_id", notification.getId().intValue()+"");
-		tags.put("host", HOSTNAME);
-		tags.put("metric", metric.getIdentifier());
-		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
+		publishAlertTrackingMetric(Counter.NOTIFICATION_PREPARE_TO_BE_SENT.getScope(), 
+				Counter.NOTIFICATION_PREPARE_TO_BE_SENT.getMetric(), 1.0,tags);
 
-		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
-				getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
+		String logMessage = "";
+		
+		try {
+			notifier.sendNotification(context);
+			_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
+			tags = new HashMap<>();
+			tags.put("notification_id", notification.getId().intValue()+"");
+			tags.put("host", HOSTNAME);
+			tags.put("metric", metric.getIdentifier());
+			publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
+			publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getScope(), 
+					Counter.NOTIFICATION_PREPARE_TO_BE_SENT.getMetric() + "." + notification.getNotifierName(),
+					1.0,tags);
+
+			logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
+					getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
+		}catch (SendNotificationException ne) {
+			_logger.error("sendNotification(): hit exception when send notifiction to {}", notification.getNotifierName(), 
+					ne);
+		}
+
 		_logger.info(logMessage);
 		_appendMessageNUpdateHistory(history, logMessage, null, 0);
 	}
@@ -785,9 +801,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	private void publishAlertTrackingMetric(String scope, BigInteger alertId, double value, Map<String, String> tags) {
+		publishAlertTrackingMetric(scope, (null != alertId ? "alert-" + alertId.intValue(): "alert-UNKNOWN"), value, tags);
+	}
+	
+	private void publishAlertTrackingMetric(String scope, String metric, double value, Map<String, String> tags) {
 		Map<Long, Double> datapoints = new HashMap<>();
 		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), value);
-		Metric trackingMetric = new Metric(scope, "alert-" + alertId.intValue());
+		Metric trackingMetric = new Metric(scope, metric);
 		trackingMetric.addDatapoints(datapoints);
 		if(tags!=null) {
 			trackingMetric.setTags(tags);

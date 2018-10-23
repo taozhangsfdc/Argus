@@ -37,6 +37,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.exception.SendNotificationException;
 import com.salesforce.dva.argus.service.alert.AlertsCountContext;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.*;
@@ -413,10 +414,12 @@ public interface AlertService extends Service {
 
 		/**
 		 * Sends notifications for the trigger on which the alert condition occurred.
-		 *
+		 * 
 		 * @param  notificationContext  The context for the notification. Cannot be null.
+		 * @throws SendNotificationException The exception thrown if failed to send notification
+		 *         the target destintion
 		 */
-		void sendNotification(NotificationContext notificationContext);
+		void sendNotification(NotificationContext notificationContext) throws SendNotificationException;
 
 		/**
 		 * Clears notifications for the trigger on which the alert condition occurred.
