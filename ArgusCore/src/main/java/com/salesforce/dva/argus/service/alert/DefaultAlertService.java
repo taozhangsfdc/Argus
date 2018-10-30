@@ -758,7 +758,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", HOSTNAME);
-		tags.put("metric", metric.getIdentifier());
+		tags.put("metric", metric.getIdentifier().hashCode()+"");
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
 		_logger.info(logMessage);
 		history.appendMessageNUpdateHistory(logMessage, null, 0);
