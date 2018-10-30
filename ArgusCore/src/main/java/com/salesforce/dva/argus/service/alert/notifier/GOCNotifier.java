@@ -40,6 +40,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.argus.exception.SendNotificationException;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
@@ -130,9 +131,10 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param  srActionable  Is the GOC notification SR actionable
 	 * @param  lastNotified  The last message time. (typically current time)
 	 * @param triggeredOnMetric The corresponding metric
+	 * @throws SendNotificationException 
 	 */
 	public void sendMessage(Severity severity, String className, String elementName, String eventName, String message,
-							int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric) {
+							int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric) throws SendNotificationException {
 		requireArgument(elementName != null && !elementName.isEmpty(), "ElementName cannot be null or empty.");
 		requireArgument(eventName != null && !eventName.isEmpty(), "EventName cannot be null or empty.");
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GOC_ENABLED))) {
@@ -184,6 +186,7 @@ public class GOCNotifier extends AuditNotifier {
 					} catch (Exception e) {
 						_logger.error("Failure - send GOC++ having element '{}' event '{}' severity {}. Exception '{}'", elementName, eventName,
 								severity.name(), e);
+						throw new SendNotificationException(e);
 					} finally {
 						if(post != null){
 							post.releaseConnection();
@@ -214,12 +217,12 @@ public class GOCNotifier extends AuditNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
+	protected void sendAdditionalNotification(NotificationContext context) throws SendNotificationException {
 		_sendAdditionalNotification(context, NotificationStatus.TRIGGERED);
 	}
 
 	@Override
-	protected void clearAdditionalNotification(NotificationContext context) {
+	protected void clearAdditionalNotification(NotificationContext context) throws SendNotificationException {
 		_sendAdditionalNotification(context, NotificationStatus.CLEARED);
 	}
 
@@ -228,8 +231,9 @@ public class GOCNotifier extends AuditNotifier {
 	 *
 	 * @param  context  The notification context.  Cannot be null.
 	 * @param  status   The notification status.  If null, will set the notification severity to <tt>ERROR</tt>
+	 * @throws SendNotificationException 
 	 */
-	protected void _sendAdditionalNotification(NotificationContext context, NotificationStatus status) {
+	protected void _sendAdditionalNotification(NotificationContext context, NotificationStatus status) throws SendNotificationException {
 		requireArgument(context != null, "Notification context cannot be null.");
 		
 		if(status == NotificationStatus.TRIGGERED) {

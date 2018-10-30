@@ -35,6 +35,7 @@ import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.exception.SendNotificationException;
 import com.salesforce.dva.argus.service.AlertService.Notifier;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.MetricService;
@@ -94,7 +95,7 @@ public abstract class DefaultNotifier implements Notifier {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public void sendNotification(NotificationContext notificationContext) {
+    public void sendNotification(NotificationContext notificationContext) throws SendNotificationException {
         SystemAssert.requireArgument(notificationContext != null, "Notification context cannot be null.");
 
         Map<String, String> additionalFields = new HashMap<>();
@@ -144,10 +145,10 @@ public abstract class DefaultNotifier implements Notifier {
 
     /**
      * A post send hook for sub-class implementations to perform additional functionality.
+     * @throws SendNotificationException 
      *
-     * @param  context  The notification context.
      */
-    protected abstract void sendAdditionalNotification(NotificationContext context);
+    protected abstract void sendAdditionalNotification(NotificationContext context) throws SendNotificationException;
 
     @Override
     public String getName() {
@@ -186,7 +187,7 @@ public abstract class DefaultNotifier implements Notifier {
     }
 
     @Override
-    public void clearNotification(NotificationContext notificationContext) {
+    public void clearNotification(NotificationContext notificationContext) throws SendNotificationException {
         SystemAssert.requireArgument(notificationContext != null, "Notification context cannot be null.");
 
         Map<String, String> additionalFields = new HashMap<>();
@@ -199,10 +200,10 @@ public abstract class DefaultNotifier implements Notifier {
 
     /**
      * Defines additional implementation specific actions to take when a notification is cleared.
+     * @throws SendNotificationException 
      *
-     * @param  context  The notification context.  Cannot be null.
      */
-    protected abstract void clearAdditionalNotification(NotificationContext context);
+    protected abstract void clearAdditionalNotification(NotificationContext context) throws SendNotificationException;
 
     @Override
     public Properties getNotifierProperties(){

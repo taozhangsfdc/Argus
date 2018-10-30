@@ -38,6 +38,7 @@ import com.salesforce.dva.argus.entity.JPAEntity;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.argus.exception.SendNotificationException;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
@@ -110,7 +111,7 @@ public class AuditNotifier extends DefaultNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
+	protected void sendAdditionalNotification(NotificationContext context) throws SendNotificationException {
 		requireArgument(context != null, "Notification context cannot be null.");
 
 		Audit audit = new Audit(getAuditBody(context, NotificationStatus.TRIGGERED), SystemConfiguration.getHostname(), context.getAlert());
@@ -259,7 +260,7 @@ public class AuditNotifier extends DefaultNotifier {
 	}
 
 	@Override
-	protected void clearAdditionalNotification(NotificationContext context) {
+	protected void clearAdditionalNotification(NotificationContext context) throws SendNotificationException {
 		requireArgument(context != null, "Notification context cannot be null.");
 
 		Audit audit = new Audit(getAuditBody(context, NotificationStatus.CLEARED), SystemConfiguration.getHostname(), context.getAlert());

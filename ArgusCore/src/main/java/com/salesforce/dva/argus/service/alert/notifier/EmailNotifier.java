@@ -37,6 +37,7 @@ import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.argus.exception.SendNotificationException;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MailService;
@@ -96,7 +97,7 @@ public class EmailNotifier extends AuditNotifier {
     }
 
     @Override
-    protected void sendAdditionalNotification(NotificationContext context) {
+    protected void sendAdditionalNotification(NotificationContext context) throws SendNotificationException {
         requireArgument(context != null, "Notification context cannot be null.");
         super.sendAdditionalNotification(context);
 
@@ -104,7 +105,11 @@ public class EmailNotifier extends AuditNotifier {
         String body = getEmailBody(context, NotificationStatus.TRIGGERED);
         Set<String> to = _getNotificationSubscriptions(context);
 
-        _mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
+        try {
+        	_mailService.sendMessage(to, subject, body, "text/html; charset=utf-8", MailService.Priority.NORMAL);
+        }catch (SystemException se) {
+        	throw new SendNotificationException(se.getMessage(), se);
+        }
     }
 
     private Set<String> _getNotificationSubscriptions(NotificationContext context) {
@@ -210,7 +215,7 @@ public class EmailNotifier extends AuditNotifier {
     }
 
     @Override
-    protected void clearAdditionalNotification(NotificationContext context) {
+    protected void clearAdditionalNotification(NotificationContext context) throws SendNotificationException {
         requireArgument(context != null, "Notification context cannot be null.");
         super.clearAdditionalNotification(context);
 

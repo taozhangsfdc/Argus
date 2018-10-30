@@ -1,19 +1,25 @@
 package com.salesforce.dva.argus.service;
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.stream.IntStream;
 
+import com.ibm.icu.text.MessageFormat;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.History;
+import com.salesforce.dva.argus.entity.History.JobStatus;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.exception.SendNotificationException;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.CallbackNotifier;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  * Created by mingzhong on 26.01.17.
@@ -33,10 +39,10 @@ public class CallbackServiceTest extends AbstractTest {
 				"* * * * *");
 		final Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
 
-		final String jsonBody = "{ \"uri\" : \"localhost:9600\", \"method\" : \"POST\", \"header\": { \"Content-Type\": \"application/json\" }, \"body\": \"{\\\"triggerName\\\": \\\"«trigger.name>»\\\", \\\"alertName\\\": \\\"«alert.name»\\\"}\",\"template\": \"ST4\"}";
+		final String jsonBody = "{ \"uri\" : \"http://localhost:9600\", \"method\" : \"POST\", \"header\": { \"Content-Type\": \"application/json\" }, \"body\": \"{ \\\"triggerName\\\": \\\"${trigger.name}\\\", \\\"alertName\\\": \\\"${alert.name}\\\" }\" }";
 		final Notification notification = new Notification("notification_name",
 				alert,
-				"notifier_ame",
+				"notifier_name",
 				Collections.singletonList(jsonBody),
 				23);
 
@@ -44,18 +50,31 @@ public class CallbackServiceTest extends AbstractTest {
 		alert.setNotifications(Collections.singletonList(notification));
 		alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
+		History history = new History(JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, JobStatus.SUCCESS);
+
 		NotificationContext context = new NotificationContext(alert,
 				alert.getTriggers().get(0),
 				notification,
 				System.currentTimeMillis(),
 				0.0,
-				new Metric("scope", "metric"));
+				new Metric("scope", "metric"), history);
 		// Test
 		CallbackNotifier notifier = (CallbackNotifier) system.getServiceFactory()
 				.getAlertService()
 				.getNotifier(AlertService.SupportedNotifier.CALLBACK);
 		int notificationCounter = 3;
-		IntStream.range(0, notificationCounter).forEach(i -> notifier.sendNotification(context));
+
+
+
+		IntStream.range(0, notificationCounter).forEach(i -> {
+			try {
+				notifier.sendNotification(context);
+			} catch (SendNotificationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				fail(MessageFormat.format("Test hit exception {}", e));
+			}
+		});
 		assertThat("Unexpected number of triggered alerts.",
 				notifier.getAllNotifications(alert).size(),
 				is(notificationCounter));

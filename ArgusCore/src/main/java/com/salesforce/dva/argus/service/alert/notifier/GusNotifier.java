@@ -60,6 +60,7 @@ import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.argus.exception.SendNotificationException;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
@@ -124,14 +125,14 @@ public class GusNotifier extends AuditNotifier {
 	}
 
 	@Override
-	protected void sendAdditionalNotification(NotificationContext context) {
+	protected void sendAdditionalNotification(NotificationContext context) throws SendNotificationException {
 		requireArgument(context != null, "Notification context cannot be null.");
 		super.sendAdditionalNotification(context);
 		sendGusNotification(context, NotificationStatus.TRIGGERED);
 	}
 	
     @Override
-    protected void clearAdditionalNotification(NotificationContext context) {
+    protected void clearAdditionalNotification(NotificationContext context) throws SendNotificationException {
         requireArgument(context != null, "Notification context cannot be null.");
         super.clearAdditionalNotification(context);
         sendGusNotification(context, NotificationStatus.CLEARED);

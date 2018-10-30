@@ -33,10 +33,12 @@ package com.salesforce.dva.argus.service;
 
 import static org.junit.Assert.assertFalse;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.salesforce.dva.argus.entity.History;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -49,6 +51,7 @@ import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.argus.exception.SendNotificationException;
 import com.salesforce.dva.argus.service.AlertService.Notifier;
 import com.salesforce.dva.argus.service.AlertService.SupportedNotifier;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
@@ -75,10 +78,18 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, new Metric("scope", "metric"));
+        History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification,
+                1418319600000L, 0.0, new Metric("scope", "metric"), history);
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(supportedNotifier);
 
-        notifier.sendNotification(context);
+        
+        try {
+			notifier.sendNotification(context);
+		} catch (SendNotificationException e) {
+			fail(String.format("_testNotifier throw exception {}", e));
+		}
     }
 
     @Test
@@ -110,10 +121,17 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1447248611000L, 0.0, new Metric("scope", "metric"));
+        History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification,
+                1447248611000L, 0.0, new Metric("scope", "metric"), history);
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.GUS);
 
-        notifier.sendNotification(context);
+        try {
+			notifier.sendNotification(context);
+		} catch (SendNotificationException e) {
+			fail(String.format("testGusNotifier throw exception {}", e));
+		}
     }
 
     @Test
@@ -132,10 +150,17 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, System.currentTimeMillis(), 0.0, new Metric("scope", "metric"));
+        History history = new History(History.JobStatus.SUCCESS.getDescription(), "localhost", BigInteger.ONE, History.JobStatus.SUCCESS);
+
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification,
+                System.currentTimeMillis(), 0.0, new Metric("scope", "metric"), history);
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.WARDENPOSTING);
 
-        notifier.sendNotification(context);
+        try {
+		notifier.sendNotification(context);
+	} catch (SendNotificationException e) {
+		fail(String.format("testWardenNotifier throw exception {}", e));
+	}
         Thread.sleep(5000);
 
         List<Annotation> annotations = system.getServiceFactory().getAnnotationService().getAnnotations(
