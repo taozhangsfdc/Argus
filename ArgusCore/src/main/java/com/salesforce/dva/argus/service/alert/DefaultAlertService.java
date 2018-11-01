@@ -756,6 +756,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					ne);
 		}
 
+		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", HOSTNAME);
 		tags.put("metric", metric.getIdentifier().hashCode()+"");
@@ -788,6 +789,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					ne);
 		}
 
+		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", HOSTNAME);
 		tags.put("metric", metric.getIdentifier().hashCode()+"");
@@ -798,7 +800,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	private void publishAlertTrackingMetric(String scope, BigInteger alertId, double value, Map<String, String> tags) {
-		publishAlertTrackingMetric(scope, (null != alertId ? "alert-" + alertId.intValue(): "alert-UNKNOWN"), value, tags);
+		if (!tags.containsKey("alertId")) {
+			tags.put("alertId", alertId.toString());
+		}
+		publishAlertTrackingMetric("argus.core", scope + ".alert", value, tags);
 	}
 	
 	private void publishAlertTrackingMetric(String scope, String metric, double value, Map<String, String> tags) {
